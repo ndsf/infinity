@@ -22,10 +22,6 @@
 #define PORT_NUMBER 8011
 #define SERVER_IP "192.168.98.50"
 
-struct test_blah {
-	int blah;
-};
-
 // Usage: ./progam -s for server and ./program for client component
 int main(int argc, char **argv) {
 
@@ -71,7 +67,7 @@ int main(int argc, char **argv) {
 		// response size
         // size_t len = *(size_t*)receiveElement.buffer->getData();
         // response data
-        printf("Response: %d\n", ((test_blah*)receiveElement.buffer->getData())->blah);
+        printf("Response: %s\n", (char*)receiveElement.buffer->getData());
 
 		printf("Message 'blah' received\n");
 		delete bufferToReadWrite;
@@ -84,13 +80,12 @@ int main(int argc, char **argv) {
 		infinity::memory::RegionToken *remoteBufferToken = (infinity::memory::RegionToken *) qp->getUserData();
 
 
-		// std::string meta_data = "blahblahblahblah";
-		test_blah test_;
-		test_.blah = 123;
+		std::string meta_data = "blahblahblahblah";
+		size_t meta_size = meta_data.size();
 
 		printf("Creating buffers\n");
 		infinity::memory::Buffer *buffer1Sided = new infinity::memory::Buffer(context, 16384 * sizeof(char));
-		infinity::memory::Buffer *buffer2Sided = new infinity::memory::Buffer(context, (void*)(&test_), sizeof(test_blah));
+		infinity::memory::Buffer *buffer2Sided = new infinity::memory::Buffer(context, (void*)(meta_data.data()), meta_data.size());
 
 		printf("Reading content from remote buffer\n");
 		infinity::requests::RequestToken requestToken(context);
