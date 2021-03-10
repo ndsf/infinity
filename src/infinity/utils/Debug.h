@@ -14,8 +14,10 @@
 
 #ifdef INFINITY_DEBUG_ON
 	#define INFINITY_DEBUG(X, ...) {fprintf(stdout, X, ##__VA_ARGS__); fflush(stdout);}
+	#define TEST() {fprintf(stdout, "%s:%d\n", __FUNCTION__, __LINE__); fflush(stdout);}
 #else
 	#define INFINITY_DEBUG(X, ...) {}
+	#define TEST() {}
 #endif
 
 #ifdef INFINITY_ASSERT_ON

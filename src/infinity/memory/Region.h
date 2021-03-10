@@ -15,8 +15,15 @@
 #include <infinity/core/Context.h>
 #include <infinity/memory/RegionType.h>
 
+#include <libpmemobj.h>
+
 namespace infinity {
 namespace memory {
+
+typedef struct {
+	size_t len; /* = strlen(buf) */
+    char buf[8192]; // TODO 
+} my_root;
 
 class RegionToken;
 
@@ -50,6 +57,10 @@ protected:
 
 	void * data;
 	uint64_t sizeInBytes;
+
+	PMEMobjpool *pop;
+	PMEMoid root;
+	my_root *rootp;
 
 };
 

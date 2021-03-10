@@ -19,8 +19,14 @@
 #include <infinity/memory/RegionToken.h>
 #include <infinity/requests/RequestToken.h>
 
+#include <infinity/utils/Debug.h>
+
 #define PORT_NUMBER 8011
 #define SERVER_IP "192.168.98.50"
+
+struct test_blah {
+	int blah;
+};
 
 // Usage: ./progam -s for server and ./program for client component
 int main(int argc, char **argv) {
@@ -49,25 +55,25 @@ int main(int argc, char **argv) {
 	if(isServer) {
 
 		printf("Creating buffers to read from and write to\n");
-		infinity::memory::Buffer *bufferToReadWrite = new infinity::memory::Buffer(context, 16384 * sizeof(char));
+		infinity::memory::Buffer *bufferToReadWrite = new infinity::memory::Buffer(context, 16384 * sizeof(char), "/home/congyong/mnt/pmem1/bufferToReadWrite", "hello_layout");
 		infinity::memory::RegionToken *bufferToken = bufferToReadWrite->createRegionToken();
 
 		printf("Creating buffers to receive a message\n");
-		infinity::memory::Buffer *bufferToReceive = new infinity::memory::Buffer(context, 16384 * sizeof(char));
+		infinity::memory::Buffer *bufferToReceive = new infinity::memory::Buffer(context, 16384 * sizeof(char), "/home/congyong/mnt/pmem1/bufferToReceive", "hello_layout");
 		context->postReceiveBuffer(bufferToReceive);
 
 		printf("Setting up connection (blocking)\n");
 		qpFactory->bindToPort(PORT_NUMBER);
 		qp = qpFactory->acceptIncomingConnection(bufferToken, sizeof(infinity::memory::RegionToken));
 
-		printf("Waiting for message (blocking)\n");
-		infinity::core::receive_element_t receiveElement;
+		printf("Waiting for message (blocking)\n"); 
+		infinity::core::receive_element_t receiveElement; 
 		while(!context->receive(&receiveElement));
 
 		// response size
         // size_t len = *(size_t*)receiveElement.buffer->getData();
         // response data
-        printf("Response: %s\n", (char*)receiveElement.buffer->getData());
+        printf("Response: %d\n", ((test_blah*)receiveElement.buffer->getData())->blah); // FAILED
 
 		printf("Message 'blah' received\n");
 		delete bufferToReadWrite;
@@ -80,12 +86,13 @@ int main(int argc, char **argv) {
 		infinity::memory::RegionToken *remoteBufferToken = (infinity::memory::RegionToken *) qp->getUserData();
 
 
-		std::string meta_data = "blahblahblahblah";
-		size_t meta_size = meta_data.size();
+		// std::string meta_data = "blahblahblahblah";
+		test_blah test_;
+		test_.blah = 123;
 
 		printf("Creating buffers\n");
-		infinity::memory::Buffer *buffer1Sided = new infinity::memory::Buffer(context, 16384 * sizeof(char));
-		infinity::memory::Buffer *buffer2Sided = new infinity::memory::Buffer(context, (void*)(meta_data.data()), meta_data.size());
+		infinity::memory::Buffer *buffer1Sided = new infinity::memory::Buffer(context, 16384 * sizeof(char), "/home/congyong/mnt/pmem1/buffer1Sided", "hello_layout");
+		infinity::memory::Buffer *buffer2Sided = new infinity::memory::Buffer(context, (void*)(&test_), sizeof(test_blah), "/home/congyong/mnt/pmem1/buffer2Sided", "hello_layout");
 
 		printf("Reading content from remote buffer\n");
 		infinity::requests::RequestToken requestToken(context);
