@@ -9,8 +9,6 @@
 #ifndef MEMORY_BUFFER_H_
 #define MEMORY_BUFFER_H_
 
-#include <string> 
-
 #include <infinity/core/Context.h>
 #include <infinity/memory/Region.h>
 #include <infinity/memory/RegisteredMemory.h>
@@ -22,9 +20,9 @@ class Buffer : public Region {
 
 public:
 
-	Buffer(infinity::core::Context *context, uint64_t sizeInBytes, std::string path, std::string layout);
+	Buffer(infinity::core::Context *context, uint64_t sizeInBytes);
 	Buffer(infinity::core::Context *context, infinity::memory::RegisteredMemory *memory, uint64_t offset, uint64_t sizeInBytes);
-	Buffer(infinity::core::Context *context, void *memory, uint64_t sizeInBytes, std::string path, std::string layout);
+	Buffer(infinity::core::Context *context, void *memory, uint64_t sizeInBytes);
 	~Buffer();
 
 public:

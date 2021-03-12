@@ -19,44 +19,18 @@
 namespace infinity {
 namespace memory {
 
-Buffer::Buffer(infinity::core::Context* context, uint64_t sizeInBytes, std::string path, std::string layout) {
+Buffer::Buffer(infinity::core::Context* context, uint64_t sizeInBytes) {
 
 	this->context = context;
-	// this->rootp->len = sizeInBytes;TEST();
-	// this->sizeInBytes = sizeInBytes;
+	this->sizeInBytes = sizeInBytes;
 	this->memoryRegionType = RegionType::BUFFER;
 
-	// Create the pmemobj pool or open it if it already exists
-	this->pop = pmemobj_create(path.c_str(), layout.c_str(), PMEMOBJ_MIN_POOL, 0666); // res->pop = pmemobj_open(FILE_NAME, LAYOUT_NAME); // FAILED
-	// Check if create failed		
-	if (this->pop == NULL) 
-	{
-		if (errno == 17)
-		{
-			printf("File exists, trying to open %s\n", path);
-			pop = pmemobj_open(path.c_str(), layout.c_str());
-			if (pop == NULL)
-			{
-				printf("Errored %s\n", strerror(errno));
-				exit(1);
-			}
-		}
-		else
-		{
-			printf("Errored %s\n", strerror(errno));
-			exit(1);
-		}
-	}
+	int res = posix_memalign(&(this->data), infinity::core::Configuration::PAGE_SIZE, sizeInBytes);
+	INFINITY_ASSERT(res == 0, "[INFINITY][MEMORY][BUFFER] Cannot allocate and align buffer.\n");
 
-	this->root = pmemobj_root(this->pop, sizeof(my_root));
-	this->rootp = reinterpret_cast<infinity::memory::my_root *>(pmemobj_direct(this->root));
-	this->rootp->len = sizeInBytes;
-	// int res = posix_memalign(&(this->data), infinity::core::Configuration::PAGE_SIZE, sizeInBytes);
-	// INFINITY_ASSERT(res == 0, "[INFINITY][MEMORY][BUFFER] Cannot allocate and align buffer.\n");
+	memset(this->data, 0, sizeInBytes);
 
-	// memset(this->data, 0, sizeInBytes);
-
-	this->ibvMemoryRegion = ibv_reg_mr(this->context->getProtectionDomain(), this->rootp->buf, this->rootp->len,
+	this->ibvMemoryRegion = ibv_reg_mr(this->context->getProtectionDomain(), this->data, this->sizeInBytes,
 			IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ);
 	INFINITY_ASSERT(this->ibvMemoryRegion != NULL, "[INFINITY][MEMORY][BUFFER] Registration failed.\n");
 
@@ -79,43 +53,14 @@ Buffer::Buffer(infinity::core::Context* context, infinity::memory::RegisteredMem
 
 }
 
-Buffer::Buffer(infinity::core::Context *context, void *memory, uint64_t sizeInBytes, std::string path, std::string layout) { // ADD PMEM PERSIST
+Buffer::Buffer(infinity::core::Context *context, void *memory, uint64_t sizeInBytes) {
 
 	this->context = context;
-	// this->sizeInBytes = sizeInBytes;
+	this->sizeInBytes = sizeInBytes;
 	this->memoryRegionType = RegionType::BUFFER;
 
-	// Create the pmemobj pool or open it if it already exists
-	this->pop = pmemobj_create(path.c_str(), layout.c_str(), PMEMOBJ_MIN_POOL, 0666); // res->pop = pmemobj_open(FILE_NAME, LAYOUT_NAME); // FAILED
-	// Check if create failed		
-	if (this->pop == NULL) 
-	{
-		if (errno == 17)
-		{
-			printf("File exists, trying to open %s\n", path);
-			pop = pmemobj_open(path.c_str(), layout.c_str());
-			if (pop == NULL)
-			{
-				printf("Errored %s\n", strerror(errno));
-				exit(1);
-			}
-		}
-		else
-		{
-			printf("Errored %s\n", strerror(errno));
-			exit(1);
-		}
-	}
-
-	this->root = pmemobj_root(this->pop, sizeof(my_root));
-	this->rootp = reinterpret_cast<infinity::memory::my_root *>(pmemobj_direct(this->root));
-
-	this->rootp->len = sizeInBytes;
-	pmemobj_persist(this->pop, &this->rootp->len, sizeof(this->rootp->len));
-	pmemobj_memcpy_persist(this->pop, this->rootp->buf, memory, this->rootp->len);
-
-	// this->data = memory;
-	this->ibvMemoryRegion = ibv_reg_mr(this->context->getProtectionDomain(), this->rootp->buf, this->rootp->len,
+	this->data = memory;
+	this->ibvMemoryRegion = ibv_reg_mr(this->context->getProtectionDomain(), this->data, this->sizeInBytes,
 			IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ);
 	INFINITY_ASSERT(this->ibvMemoryRegion != NULL, "[INFINITY][MEMORY][BUFFER] Registration failed.\n");
 
@@ -130,8 +75,7 @@ Buffer::~Buffer() {
 		ibv_dereg_mr(this->ibvMemoryRegion);
 	}
 	if (this->memoryAllocated) {
-		// free(this->data);
-		pmemobj_close(this->pop);
+		free(this->data);
 	}
 
 }

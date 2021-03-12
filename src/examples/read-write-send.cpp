@@ -22,6 +22,10 @@
 #define PORT_NUMBER 8011
 #define SERVER_IP "192.168.98.50"
 
+struct test_blah {
+	int blah;
+};
+
 // Usage: ./progam -s for server and ./program for client component
 int main(int argc, char **argv) {
 
@@ -49,11 +53,11 @@ int main(int argc, char **argv) {
 	if(isServer) {
 
 		printf("Creating buffers to read from and write to\n");
-		infinity::memory::Buffer *bufferToReadWrite = new infinity::memory::Buffer(context, 16384 * sizeof(char), "/home/congyong/mnt/pmem1/bufferToReadWrite", "hello_layout");
+		infinity::memory::Buffer *bufferToReadWrite = new infinity::memory::Buffer(context, 16384 * sizeof(char));
 		infinity::memory::RegionToken *bufferToken = bufferToReadWrite->createRegionToken();
 
 		printf("Creating buffers to receive a message\n");
-		infinity::memory::Buffer *bufferToReceive = new infinity::memory::Buffer(context, 16384 * sizeof(char), "/home/congyong/mnt/pmem1/bufferToReceive", "hello_layout");
+		infinity::memory::Buffer *bufferToReceive = new infinity::memory::Buffer(context, 16384 * sizeof(char));
 		context->postReceiveBuffer(bufferToReceive);
 
 		printf("Setting up connection (blocking)\n");
@@ -67,7 +71,7 @@ int main(int argc, char **argv) {
 		// response size
         // size_t len = *(size_t*)receiveElement.buffer->getData();
         // response data
-        printf("Response len=%d: %s\n", receiveElement.buffer->getSizeInBytes(), (char*)receiveElement.buffer->getData());
+        printf("Response: %d\n", ((test_blah*)receiveElement.buffer->getData())->blah);
 
 		printf("Message 'blah' received\n");
 		delete bufferToReadWrite;
@@ -80,12 +84,13 @@ int main(int argc, char **argv) {
 		infinity::memory::RegionToken *remoteBufferToken = (infinity::memory::RegionToken *) qp->getUserData();
 
 
-		std::string meta_data = "blahblahblahblah";
-		size_t meta_size = meta_data.size();
+		// std::string meta_data = "blahblahblahblah";
+		test_blah test_;
+		test_.blah = 123;
 
 		printf("Creating buffers\n");
-		infinity::memory::Buffer *buffer1Sided = new infinity::memory::Buffer(context, 16384 * sizeof(char), "/home/congyong/mnt/pmem1/buffer1Sided", "hello_layout");
-		infinity::memory::Buffer *buffer2Sided = new infinity::memory::Buffer(context, (void*)(meta_data.data()), meta_data.size(), "/home/congyong/mnt/pmem1/buffer2Sided", "hello_layout");
+		infinity::memory::Buffer *buffer1Sided = new infinity::memory::Buffer(context, 16384 * sizeof(char));
+		infinity::memory::Buffer *buffer2Sided = new infinity::memory::Buffer(context, (void*)(&test_), sizeof(test_blah));
 
 		printf("Reading content from remote buffer\n");
 		infinity::requests::RequestToken requestToken(context);

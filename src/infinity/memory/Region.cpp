@@ -35,19 +35,19 @@ RegionType Region::getMemoryRegionType() {
 }
 
 uint64_t Region::getSizeInBytes() {
-	return this->rootp->len;
+	return this->sizeInBytes;
 }
 
 uint64_t Region::getRemainingSizeInBytes(uint64_t offset) {
-	return this->rootp->len - offset;
+	return this->sizeInBytes - offset;
 }
 
 uint64_t Region::getAddress() {
-	return reinterpret_cast<uint64_t>(this->rootp->buf);
+	return reinterpret_cast<uint64_t>(this->data);
 }
 
 uint64_t Region::getAddressWithOffset(uint64_t offset) {
-	return reinterpret_cast<uint64_t>(this->rootp->buf) + offset;
+	return reinterpret_cast<uint64_t>(this->data) + offset;
 }
 
 uint32_t Region::getLocalKey() {
